@@ -57,7 +57,11 @@ app.post(
     });
 
     // Create token
-    const token = jwt.sign({ user_id: user._id, email }, tokenKey, {});
+    const token = jwt.sign(
+      { user_id: user._id, email, role: user.role },
+      tokenKey,
+      {}
+    );
 
     res.json({
       _id: user.id,
@@ -88,6 +92,7 @@ app.post(
         _id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role,
         token: token,
       });
     } else {
@@ -131,10 +136,17 @@ app.post("/students/:lectureId", verifyAuthenticated, async (req, res) => {
 });
 
 app.get("/lectures/mine", verifyAuthenticated, async (req, res) => {
-  const lectures = await Lecture.find({
-    students: { $all: [req.user.user_id] },
-  });
-  res.json(lectures);
+  if (req.user.role == "Student") {
+    const lectures = await Lecture.find({
+      students: { $all: [req.user.user_id] },
+    });
+    res.json(lectures);
+  } else {
+    const lectures = await Lecture.find({
+      teacherId: req.user.user_id,
+    });
+    res.json(lectures);
+  }
 });
 
 app.get("/lectures/:lectureId", verifyAuthenticated, async (req, res) => {
@@ -147,4 +159,5 @@ app.get("/lectures/:lectureId", verifyAuthenticated, async (req, res) => {
 
   res.json(lecture);
 });
+
 app.listen(port, () => console.log(`Server running in ${port}`));
